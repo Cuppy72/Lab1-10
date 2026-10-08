@@ -11,6 +11,8 @@
 6:
 8: file_lib include/files.h
 	gcc ./src/eight.c -I./include -L./impl -lFiles -Wl,-rpath,'$$ORIGIN/../impl' -o ./bin/eight
+9:
+	gcc ./src/nine.c -o ./bin/nine
 
 7: file_lib include/files.h
 	gcc ./src/seven.c -I./include -L./impl -lFiles -Wl,-rpath,'$$ORIGIN/../impl' -o ./bin/seven
@@ -33,5 +35,7 @@ clean_5:
 clean_6:
 clean_8:
 	rm -f ./bin/eight ./impl/libFiles.so
+clean_9:
+	rm -f ./bin/nine
 clean_7:
 	rm -f ./bin/sevem ./impl/libFiles.so
