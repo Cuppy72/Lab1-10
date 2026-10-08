@@ -32,7 +32,7 @@ static int correct_int(char *num, int *len_num, int *lead_zeros, char *sign)
 	if(flag) {
 		(*len_num) = 1;
 		(*lead_zeros)--;
-		return 0;
+		return 1;
 	}
 
 	return 1;

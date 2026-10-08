@@ -25,11 +25,15 @@
 #define NON_POSITIVE 13
 #define NON_CONDITION 14
 #define UNKNOWN_FLAG 15
+#define ZERO_DIVISION 16
 
 #define MAX_ITERATION 1e5
 
 int h_flag(long long num)
 {
+	if(num == 0)
+		return ZERO_DIVISION;
+
 	int count_valid = 0;
 
 	for(long long i = 1; i <= 100; i++)
@@ -201,6 +205,9 @@ void error_message(int error_num, char flag)
 			break;
 		case UNKNOWN_FLAG:
 			printf("Введен неизвестный флаг %c\n", flag);
+			break;
+		case ZERO_DIVISION:
+			printf("Ошибка деления на ноль");
 			break;
 		case SUCCESS:
 		default:

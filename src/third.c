@@ -21,9 +21,10 @@
 #define NOT_ENOUGH_ARGS 12
 #define INCORRECT_FLAG 13
 #define OVERFLOW 14
+
 #define NOT_A_NUM -2
 
-void solution(double eps, double a, double b, double c)
+int solution(double eps, double a, double b, double c)
 {
 	if (fabs(a) < eps) {
 		if (fabs(b) < eps) {
@@ -40,7 +41,7 @@ void solution(double eps, double a, double b, double c)
 		
 		if(isinf(D)) {
 			puts("Ошибка переполнения");
-			return;
+			return OVERFLOW;
 		}
 
 		if (fabs(D) < eps) {
@@ -51,7 +52,7 @@ void solution(double eps, double a, double b, double c)
 
 			if(isinf(x1) || isinf(x2)) {
 				puts("Ошибка переполнения");
-				return;
+				return OVERFLOW;
 			}
 			
 			printf("уравнение содержит два корня: %.5lf, %.5lf\n", x1, x2);
@@ -59,6 +60,8 @@ void solution(double eps, double a, double b, double c)
 			puts("уравнение не содержит действительных корней");
 		}
 	}
+
+	return SUCCESS;
 }
 
 int q_flag(int count_nums, char *argv[])
@@ -88,6 +91,9 @@ int q_flag(int count_nums, char *argv[])
 	double num_2 = nums[NUM2_IND];
 	double num_3 = nums[NUM3_IND];
 	double eps = nums[EPS_IND];
+
+	if(isnan(num_1) || isnan(num_2) || isnan(num_3) || isnan(eps))
+		return NOT_A_NUM;
 
 	int eq12 = fabs(num_1 - num_2) < eps;
 	int eq13 = fabs(num_1 - num_3) < eps;
@@ -168,7 +174,7 @@ int m_flag(int count_nums, char *argv[])
 	long long first = atoll(argv[NUMS_START_IND]);
 	long long second = atoll(argv[NUMS_START_IND + 1]);
 	
-	if(second == 0)
+	if(first == 0 || second == 0)
 		return INCORRECT_NUM;
 
 	if(first == LLONG_MIN && second == -1)
@@ -204,17 +210,32 @@ int t_flag(int count_nums, char *argv[])
 
 	bool flag = false;
 
-	if(fabs(pow(nums[NUM1_IND], 2) + pow(nums[NUM2_IND], 2) - pow(nums[NUM3_IND], 2)) < nums[EPS_IND])
+	double num_1 = nums[NUM1_IND];
+	double num_2 = nums[NUM2_IND];
+	double num_3 = nums[NUM3_IND];
+	double eps = nums[EPS_IND];
+
+	if(isnan(num_1) || isnan(num_2) || isnan(num_3) || isnan(eps))
+		return NOT_A_NUM;
+
+	if(num_1 > sqrt(INT_MAX))
+		return OVERFLOW;
+	if(num_2 > sqrt(INT_MAX))
+		return OVERFLOW;
+	if(num_3 > sqrt(INT_MAX))
+		return OVERFLOW;
+
+	if(fabs(pow(num_1, 2) + pow(num_2, 2) - pow(num_3, 2)) < eps) 
 		flag = true;
-	else if (fabs(pow(nums[NUM1_IND], 2) + pow(nums[NUM3_IND], 2) - pow(nums[NUM2_IND], 2)) < nums[EPS_IND])
+	else if (fabs(pow(num_1, 2) + pow(num_3, 2) - pow(num_2, 2)) < eps)
 		flag = true;
-	else if (fabs(pow(nums[NUM2_IND], 2) + pow(nums[NUM2_IND], 2) - pow(nums[NUM1_IND], 2)) < nums[EPS_IND])
+	else if (fabs(pow(num_3, 2) + pow(num_2, 2) - pow(num_1, 2)) < eps)
 		flag = true;
 
 	if(flag)
-		printf("Стороны %.5lf, %.5lf, %.5lf могут быть длинами сторон прямоугольного треугольника\n", nums[NUM1_IND], nums[NUM2_IND], nums[NUM3_IND]);
+		printf("Стороны %.5lf, %.5lf, %.5lf могут быть длинами сторон прямоугольного треугольника\n", num_1, num_2, num_3);
 	else
-		printf("Стороны %.5lf, %.5lf, %.5lf не могут быть длинами сторон прямоугольного треугольника\n", nums[NUM1_IND], nums[NUM2_IND], nums[NUM3_IND]);
+		printf("Стороны %.5lf, %.5lf, %.5lf не могут быть длинами сторон прямоугольного треугольника\n", num_1, num_2, num_3);
 
 	return SUCCESS;
 }
@@ -233,6 +254,9 @@ void err_switch(char flag, int error_num)
 			break;
 		case OVERFLOW:
 			puts("Введенное число выходит за границы типа данных");
+			break;
+		case NOT_A_NUM:
+			puts("Ошибка вещественного числа");
 			break;
 		case SUCCESS:
 			break;
@@ -273,13 +297,14 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	char *flag = argv[FLAG_IND];
 	if(*flag != '/' && *flag != '-') {
 		puts("Некорректно введен флаг");
 		return 1;
 	}
-	flag++;
 
-	flag_switch(argv[FLAG_IND], argc - NUMS_START_IND, argv);
+	flag++;
+	flag_switch(flag, argc - NUMS_START_IND, argv);
 
 	return 0;
 }

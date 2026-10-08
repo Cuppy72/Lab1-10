@@ -4,12 +4,19 @@
 	gcc ./src/second.c -lm -o ./bin/second
 3: overflow_lib include/overflow.h
 	gcc ./src/third.c -I./include -L./impl -lOverflow -lm -Wl,-rpath,'$$ORIGIN/../impl' -o ./bin/third
-4:
-	gcc ./src/fourth.c -o ./bin/fourth
+4: file_lib include/files.h
+	gcc ./src/fourth.c -I./include -L./impl -lFiles -Wl,-rpath,'$$ORIGIN/../impl' -o ./bin/fourth
 5:
 	gcc ./src/five.c -lm -o ./bin/five
+6:
+7: file_lib include/files.h
+	gcc ./src/seven.c -I./include -L./impl -lFiles -Wl,-rpath,'$$ORIGIN/../impl' -o ./bin/seven
+
 overflow_lib: include/overflow.h
 	gcc -fPIC -shared lib/overflow.c -I./include -o ./impl/libOverflow.so
+file_lib: include/files.h
+	gcc -fPIC -shared lib/files.c -I./include -o ./impl/libFiles.so
+
 clean_1:
 	rm -f ./bin/first ./impl/libOverflow.so
 clean_2:
@@ -20,3 +27,6 @@ clean_4:
 	rm -f ./bin/fourth
 clean_5:
 	rm -f ./bin/five
+clean_6:
+clean_7:
+	rm -f ./bin/sevem ./impl/libFiles.so

@@ -3,21 +3,19 @@
 #include <string.h>
 #include <ctype.h>
 
-#define BUFF_SIZE 1024
+#include "files.h"
 
 #define FLAG_IND 1
 #define ARGS_START_IND 2
 
 #define ACSII_PAD 55
 
-#define SUCCESS 10
 #define NOT_ENOUGH_ARGS 11
 #define BUFF_OVERFLOW 12
-#define FILE_OPEN_ERROR 13
-#define FILE_CLOSE_ERROR 14
-#define WRITE_FILE_ERROR 15
 #define REMOVE_FILE_ERROR 16
 #define FLAG_ERROR 17
+#define EQUAL_FILENAMES 18
+#define INCORRECT_FORMAT 19
 
 static int add_prefix(char *old_name, char *new_name)
 {
@@ -51,38 +49,6 @@ static int result_name(bool name_flag, int argc, char *argv[], char *new_name)
 		err = add_prefix(argv[ARGS_START_IND], new_name);
 
 	return err;
-}
-
-static int write_all(FILE *destination, FILE *src)
-{
-	int status_code;
-
-	if(destination == NULL) {
-		status_code = fclose(src);
-
-		if(status_code)
-			return FILE_CLOSE_ERROR;
-	} else if(src == NULL) {
-		status_code = fclose(destination);
-
-		if(status_code)
-			return FILE_CLOSE_ERROR;
-	}
-
-	if(destination == NULL || src == NULL)
-		return FILE_OPEN_ERROR;
-
-	char buff[BUFF_SIZE];
-	int bytes_read, bytes_write;
-
-	while((bytes_read = fread(buff, sizeof(char), BUFF_SIZE, src)) > 0) {
-		bytes_write = fwrite(buff, sizeof(char), bytes_read, destination);
-
-		if(bytes_read != bytes_write)
-			return WRITE_FILE_ERROR;
-	}
-
-	return SUCCESS;
 }
 
 static int to_hex(char num, unsigned char *hex_num)
@@ -154,8 +120,7 @@ static int s_func(FILE *source, FILE *tmp_file)
 
 static int a_func(FILE *source, FILE *tmp_file)
 {
-	int status_code_1, status_code_2;
-
+	int err;
 	char symb;
 
 	while((symb = fgetc(source)) != EOF) {
@@ -178,12 +143,10 @@ static int a_func(FILE *source, FILE *tmp_file)
 				n = fprintf(tmp_file, "%c", hex_num[i] + ACSII_PAD);
 
 			if(n != 1) {
-				status_code_1 = fclose(tmp_file);
-				status_code_2 = fclose(source);
-	
-				if(status_code_1 || status_code_2)
-					return FILE_CLOSE_ERROR;
-
+				err = safety_close_files(tmp_file, source);
+				if(err != SUCCESS)
+					return err;
+				
 				return WRITE_FILE_ERROR;
 			}
 
@@ -191,12 +154,10 @@ static int a_func(FILE *source, FILE *tmp_file)
 		}
 
 		if(nums_write != nums_read) {
-			status_code_1 = fclose(tmp_file);
-			status_code_2 = fclose(source);
-	
-			if(status_code_1 || status_code_2)
-				return FILE_CLOSE_ERROR;
-
+			err = safety_close_files(tmp_file, source);
+			if(err != SUCCESS)
+				return err;
+			
 			return WRITE_FILE_ERROR;
 		}
 	}
@@ -206,55 +167,41 @@ static int a_func(FILE *source, FILE *tmp_file)
 
 int adaptive_func(bool name_flag, int argc, char *argv[], int (*func)(FILE*, FILE*))
 {
-	int status_code, status_code_1, status_code_2;
-
+	int err;
 	char new_name[BUFF_SIZE];
 
-	int err = result_name(name_flag, argc, argv, new_name);
+	err = result_name(name_flag, argc, argv, new_name);
 	if(err != SUCCESS)
 		return err;
+
+	if(equal_filenames(argv[ARGS_START_IND], "tmp.txt") || equal_filenames(new_name, "tmp.txt"))
+		return EQUAL_FILENAMES;
 
 	FILE *source = fopen(argv[ARGS_START_IND], "r");
 	FILE *tmp_file = fopen("tmp.txt", "w");
 		
-	if(source == NULL) {
-		status_code = fclose(tmp_file);
-
-		if(status_code)
-			return FILE_CLOSE_ERROR;
-	} else if(tmp_file == NULL) {
-		status_code = fclose(source);
-
-		if(status_code)
-			return FILE_CLOSE_ERROR;
-	}
-
-	if(source == NULL || tmp_file == NULL)
-		return FILE_OPEN_ERROR;
-
+	err = validate_open_files(source, tmp_file);
+	if(err != SUCCESS)
+		return err;
 	
-	status_code = func(source, tmp_file);
-	if(status_code != SUCCESS)
-		return status_code;
+	err = func(source, tmp_file);
+	if(err != SUCCESS)
+		return err;
 
-	status_code_1 = fclose(source);
-	status_code_2 = fclose(tmp_file);
-
-	if(status_code_1 || status_code_2)
-		return FILE_CLOSE_ERROR;
+	err = safety_close_files(source, tmp_file);
+	if(err != SUCCESS)
+		return err;
 
 	FILE *destination = fopen(new_name, "w");
 	tmp_file = fopen("tmp.txt", "r");
 
-	err = write_all(destination, tmp_file);	
+	err = file_cpy(tmp_file, destination);	
 	if(err != SUCCESS)
 		return err;
 
-	status_code_1 = fclose(destination);
-	status_code_2 = fclose(tmp_file);
-
-	if(status_code_1 || status_code_2)
-		return FILE_CLOSE_ERROR;
+	err = safety_close_files(destination, tmp_file);
+	if(err != SUCCESS)
+		return err;
 
 	if(remove("tmp.txt"))
 		return REMOVE_FILE_ERROR;
@@ -282,6 +229,9 @@ void error_switch(char flag, int error)
 			break;
 		case REMOVE_FILE_ERROR:
 			puts("Произошла ошибка удаления временного файла");
+			break;
+		case EQUAL_FILENAMES:
+			puts("Введенное имя файла является недопустимым");
 			break;
 		case SUCCESS:
 		default:
