@@ -3,56 +3,31 @@
 #include <stdbool.h>
 #include <limits.h>
 #include <time.h>
-#include <errno.h>
+
+#include "overflow.h"
 
 #define FIX_SIZE 20
+
+#define BUFF_SIZE 1024
 
 #define A_IND 1
 #define B_IND 2
 
 #define MIN_DYN_SIZE 10
-#define MAX_DYN_SIZE 10000
+#define MAX_DYN_SIZE 20
 
 #define MIN_VALUE -1000
 #define MAX_VALUE 1000
 
 #define INT_SPAN (((unsigned long long)INT_MAX - (unsigned long long)INT_MIN) + 1ULL)
 
-#define INCORRECT_NUM 25
+#define INCORRECT_NUM -2
 #define INCORRECT_RANGE 26
 #define WIDE_RANGE 27
 #define ALLOC_ERROR 28
+#define OVERFLOW 29
 
 #define SUCCESS 10
-
-static int read_int(char *str, long long *num)
-{
-	char *ptr = str;
-
-	if(*ptr == '-' || *ptr == '+')
-		ptr++;
-
-	if(*ptr == '\0')
-		return false;
-
-	for(; *ptr != '\0'; ptr++) {
-		if(*ptr < '0' || *ptr > '9')
-			return false;
-	}
-
-	char *end_ptr = NULL;
-
-	errno = 0;
-	*num = strtoll(str, &end_ptr, 10);
-
-	if(errno != 0 || end_ptr == str || *end_ptr != '\0')
-		return false;
-
-	if(*num < INT_MIN || *num > INT_MAX)
-		return false;
-
-	return true;
-}
 
 static unsigned long long rand_bits(unsigned bits)
 {
@@ -73,7 +48,7 @@ static int rand_in_range(int left, int right)
 	while((1ULL << bits) < span)
 		bits++;
 
-	unsigned long long limit = (UINT64_MAX / span) * span;
+	unsigned long long limit = (ULLONG_MAX / span) * span;
 
 	unsigned long long value;
 
@@ -148,6 +123,9 @@ static int err_switch(int err)
 			break;
 		case ALLOC_ERROR:
 			puts("Ошибка во время выделения памяти");
+			break;
+		case OVERFLOW:
+			puts("Ошибка переполнения");
 			break;
 		case SUCCESS:
 		default:
@@ -231,13 +209,33 @@ int main(int argc, char *argv[])
 	long long left;
 	long long right;
 
-	if(!read_int(argv[A_IND], &left) || !read_int(argv[B_IND], &right))
+	char max_num[BUFF_SIZE];
+	char min_num[BUFF_SIZE];
+
+	snprintf(max_num, sizeof(max_num), "%lld", LLONG_MAX);
+	snprintf(min_num, sizeof(min_num), "%lld", LLONG_MIN);
+
+	int flag = int_overflow(argv[A_IND], max_num, min_num);
+	if(flag == INCORRECT_NUM)
 		return err_switch(INCORRECT_NUM);
+
+	if(flag == -1 || flag == 1)
+		return err_switch(OVERFLOW);
+	
+	flag = int_overflow(argv[B_IND], max_num, min_num);
+	if(flag == INCORRECT_NUM)
+		return err_switch(INCORRECT_NUM);
+
+	if(flag == -1 || flag == 1)
+		return err_switch(OVERFLOW);
+
+	left = atoll(argv[A_IND]);
+	right = atoll(argv[B_IND]);
 
 	if(left >= right)
 		return err_switch(INCORRECT_RANGE);
 
-	if(right - left > INT_DIFF)
+	if(right - left > INT_SPAN)
 		return err_switch(WIDE_RANGE);
 
 	int err = part_one((int)left, (int)right);

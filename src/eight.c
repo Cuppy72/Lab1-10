@@ -129,19 +129,7 @@ static int to_decimal(char *word, int base, char *result)
 		return SUCCESS;
 	}
 
-	char reverse_num[BUFF_SIZE];
-	char *ptr_reverse = reverse_num;
-
-	while(total > 0) {
-		*ptr_reverse++ = (total % 10) + '0';
-		total /= 10;
-	}
-
-	char *ptr_result = result;
-	while(ptr_reverse != reverse_num)
-		*ptr_result++ = *--ptr_reverse;
-
-	*ptr_result = '\0';
+	snprintf(result, BUFF_SIZE, "%llu", total);
 
 	return SUCCESS;
 }

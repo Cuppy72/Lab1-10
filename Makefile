@@ -8,14 +8,12 @@
 	gcc ./src/fourth.c -I./include -L./impl -lFiles -Wl,-rpath,'$$ORIGIN/../impl' -o ./bin/fourth
 5:
 	gcc ./src/five.c -lm -o ./bin/five
-6:
-8: file_lib include/files.h
-	gcc ./src/eight.c -I./include -L./impl -lFiles -Wl,-rpath,'$$ORIGIN/../impl' -o ./bin/eight
-9:
-	gcc ./src/nine.c -o ./bin/nine
-
 7: file_lib include/files.h
 	gcc ./src/seven.c -I./include -L./impl -lFiles -Wl,-rpath,'$$ORIGIN/../impl' -o ./bin/seven
+8: file_lib include/files.h
+	gcc ./src/eight.c -I./include -L./impl -lFiles -Wl,-rpath,'$$ORIGIN/../impl' -o ./bin/eight
+9: overflow_lib include/overflow.h
+	gcc ./src/nine.c -I./include -L./impl -lOverflow -Wl,-rpath,'$$ORIGIN/../impl' -o ./bin/nine
 
 overflow_lib: include/overflow.h
 	gcc -fPIC -shared lib/overflow.c -I./include -o ./impl/libOverflow.so
